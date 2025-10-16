@@ -35,3 +35,18 @@ class UserLoginSerializer(serializers.Serializer):
             return data
         else:
             raise serializers.ValidationError('ایمیل و رمز عبور باید وارد شوند')
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = [
+            'id', 'email', 'first_name', 'last_name',
+            'phone', 'national_code', 'avatar', 'user_type', 'is_verified'
+        ]
+        read_only_fields = ('id', 'email', 'is_verified')
+
+    def update(self, instance, validated_data):
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        return instance

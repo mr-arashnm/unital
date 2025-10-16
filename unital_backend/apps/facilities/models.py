@@ -2,6 +2,7 @@ from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from apps.accounts.models import User
 from apps.complexes.models import Complex, Unit
+from decimal import Decimal
 
 class Facility(models.Model):
     FACILITY_TYPES = (
@@ -142,11 +143,13 @@ class FacilityBooking(models.Model):
         # محاسبه خودکار مدت زمان
         if self.start_time and self.end_time:
             duration = self.end_time - self.start_time
-            self.duration_hours = duration.total_seconds() // 3600
+            # ensure an integer number of hours (use floor)
+            self.duration_hours = int(duration.total_seconds() // 3600)
         
         # محاسبه هزینه
         if not self.facility.is_free:
-            self.total_cost = self.duration_hours * self.facility.hourly_rate
+            # use Decimal for monetary calculation
+            self.total_cost = Decimal(self.duration_hours) * Decimal(self.facility.hourly_rate)
         
         super().save(*args, **kwargs)
 
