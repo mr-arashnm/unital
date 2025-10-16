@@ -47,7 +47,7 @@ INSTALLED_APPS = [
     'apps.complexes.apps.ComplexesConfig',
     'apps.financial.apps.FinancialConfig',
     'apps.operations.apps.OperationsConfig',
-    
+    'apps.communications.apps.CommunicationsConfig',
 ]
 
 MIDDLEWARE = [

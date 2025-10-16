@@ -6,5 +6,6 @@ urlpatterns = [
     path('api/auth/', include('apps.accounts.urls')),
     path('api/complexes/', include('apps.complexes.urls')),
     path('api/financial/', include('apps.financial.urls')),
-    path('api/operations/', include('apps.operations.urls')),  # اضافه کردن این خط
+    path('api/operations/', include('apps.operations.urls')),
+    path('api/communications/', include('apps.communications.urls')),
 ]
