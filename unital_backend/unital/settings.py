@@ -11,9 +11,13 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+import sys
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# ensure the 'apps' package directory is on sys.path so imports like 'apps.accounts' work
+sys.path.insert(0, str(BASE_DIR / 'apps'))
 
 
 # Quick-start development settings - unsuitable for production
@@ -44,6 +48,7 @@ INSTALLED_APPS = [
     
     # اپلیکیشن‌های ما
     'apps.accounts.apps.AccountsConfig',
+    'apps.complexes.apps.ComplexesConfig',
     
 ]
 
