@@ -46,7 +46,7 @@ INSTALLED_APPS = [
     'apps.accounts.apps.AccountsConfig',
     'apps.complexes.apps.ComplexesConfig',
     'apps.financial.apps.FinancialConfig',
-    
+    'apps.operations.apps.OperationsConfig',
     
 ]
 
