@@ -9,4 +9,6 @@ router.register(r'units', views.UnitViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
+    path('units/<int:unit_id>/transfer-history/', views.unit_transfer_history, name='unit-transfer-history'),
+    path('units/<int:unit_id>/change-ownership/', views.change_unit_ownership, name='change-unit-ownership'),
 ]
