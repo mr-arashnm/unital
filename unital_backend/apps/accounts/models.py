@@ -17,6 +17,8 @@ class User(AbstractUser):
     national_code = models.CharField(max_length=10, null=True, blank=True)
     is_verified = models.BooleanField(default=False)
     avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
     
     # حذف فیلدهای اضافی از AbstractUser که نیاز نداریم
     username = None
