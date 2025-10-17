@@ -10,7 +10,7 @@ from .serializers import (
     ChargeTemplateSerializer, ChargeSerializer, 
     TransactionSerializer, InvoiceSerializer
 )
-from apps.complexes.models import Complex, Unit
+from apps.complexes.models import Building, Unit
 
 class ChargeTemplateViewSet(viewsets.ModelViewSet):
     queryset = ChargeTemplate.objects.filter(is_active=True)
@@ -45,7 +45,7 @@ class ChargeViewSet(viewsets.ModelViewSet):
         period = request.data.get('period')  # YYYY-MM
         
         try:
-            complex = Complex.objects.get(id=complex_id, board_members=request.user)
+            complex = Building.objects.get(id=complex_id, board_members=request.user)
             units = Unit.objects.filter(building__complex=complex)
             templates = ChargeTemplate.objects.filter(complex=complex, is_active=True)
             
@@ -70,7 +70,7 @@ class ChargeViewSet(viewsets.ModelViewSet):
                 'created_charges': len(created_charges)
             })
             
-        except Complex.DoesNotExist:
+        except Building.DoesNotExist:
             return Response(
                 {'error': 'مجتمع یافت نشد'}, 
                 status=status.HTTP_404_NOT_FOUND

@@ -5,10 +5,12 @@ from .models import User
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
     # avoid referencing created_at/updated_at here until DB migrations are applied
-    list_display = ('email', 'first_name', 'last_name', 'user_type', 'is_verified', 'is_active')
+    list_display = ('email', 'first_name', 'last_name', 'user_type', 'phone', 'is_verified', 'is_active', 'avatar')
     list_filter = ('user_type', 'is_verified', 'is_active')
     search_fields = ('email', 'first_name', 'last_name', 'phone')
     ordering = ('email',)
+    
+    list_editable = ['user_type']
     
     fieldsets = (
         (None, {'fields': ('email', 'password')}),

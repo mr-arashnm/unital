@@ -1,53 +1,61 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from .models import Complex, Building, StorageAssignment, StorageUnit, Unit, UnitTransferHistory
+from .models import Building, Unit, UnitTransferHistory, Parking, Warehouse, Contract
 
 # Use local lightweight serializer instead of importing from apps.accounts.serializers
 User = get_user_model()
 
 class UserInfoSerializer(serializers.ModelSerializer):
+    full_name = serializers.SerializerMethodField()
+    
     class Meta:
         model = User
         # keep fields minimal and safe to avoid depending on account serializer internals
-        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'user_type']
+        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'user_type', 'full_name']
+    
+    def get_full_name(self, obj):
+        return f"{obj.first_name} {obj.last_name}".strip() or obj.username
 
 class BuildingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Building
-        fields = ['id', 'name', 'number', 'floors', 'units_per_floor']
+        fields = ['id', 'name', 'code', 'type', 'address', 'total_floors', 'total_units', 
+                 'total_parkings', 'total_warehouses', 'description', 'created_at', 'updated_at']
 
 class UnitSerializer(serializers.ModelSerializer):
     owner_info = UserInfoSerializer(source='owner', read_only=True)
-    resident_info = UserInfoSerializer(source='current_resident', read_only=True)
-    building_name = serializers.CharField(source='building.name', read_only=True)
-    complex_name = serializers.CharField(source='building.complex.name', read_only=True)
+    resident_info = UserInfoSerializer(source='resident', read_only=True)
+    building_info = BuildingSerializer(source='building', read_only=True)
     
     class Meta:
         model = Unit
         fields = [
             'id', 'unit_number', 'floor', 'area', 'status',
-            'owner', 'owner_info', 'current_resident', 'resident_info',
-            'building_name', 'complex_name', 'rooms', 'parking', 'storage',
-            'created_at'
+            'owner', 'owner_info', 'resident', 'resident_info',
+            'building', 'building_info', 'rooms',
+            'has_parking', 'has_warehouse',
+            'total_parking_count', 'total_warehouse_count',
+            'full_address', 'created_at', 'updated_at'
         ]
 
-class ComplexSerializer(serializers.ModelSerializer):
-    buildings = BuildingSerializer(many=True, read_only=True)
-    board_members_info = UserInfoSerializer(source='board_members', many=True, read_only=True)
-    total_occupied_units = serializers.SerializerMethodField()
+class ParkingSerializer(serializers.ModelSerializer):
+    building_name = serializers.CharField(source='building.name', read_only=True)
+    unit_info = UnitSerializer(source='unit', read_only=True)
     
     class Meta:
-        model = Complex
-        fields = [
-            'id', 'name', 'code', 'type', 'address', 
-            'total_units', 'total_buildings', 'description',
-            'board_members', 'board_members_info', 'buildings',
-            'total_occupied_units', 'created_at'
-        ]
+        model = Parking
+        fields = ['id', 'building', 'building_name', 'unit', 'unit_info', 
+                 'floor', 'code', 'status', 'created_at', 'updated_at']
+
+class WarehouseSerializer(serializers.ModelSerializer):
+    building_name = serializers.CharField(source='building.name', read_only=True)
+    unit_info = UnitSerializer(source='unit', read_only=True)
     
-    def get_total_occupied_units(self, obj):
-        return Unit.objects.filter(building__complex=obj, status='occupied').count()
-    
+    class Meta:
+        model = Warehouse
+        fields = ['id', 'building', 'building_name', 'unit', 'unit_info', 
+                 'floor', 'code', 'status', 'area', 'created_at', 'updated_at']
+
 class UnitTransferHistorySerializer(serializers.ModelSerializer):
     previous_owner_info = UserInfoSerializer(source='previous_owner', read_only=True)
     new_owner_info = UserInfoSerializer(source='new_owner', read_only=True)
@@ -61,33 +69,73 @@ class UnitTransferHistorySerializer(serializers.ModelSerializer):
             'id', 'unit', 'unit_info', 'transfer_type', 'transfer_date',
             'previous_owner', 'previous_owner_info', 'new_owner', 'new_owner_info',
             'previous_resident', 'previous_resident_info', 'new_resident', 'new_resident_info',
-            'contract_number', 'contract_date', 'description', 'recorded_by', 'created_at'
-        ]
-        
-        
-class StorageUnitSerializer(serializers.ModelSerializer):
-    complex_name = serializers.CharField(source='complex.name', read_only=True)
-    assigned_unit_info = UnitSerializer(source='assigned_unit', read_only=True)
-    
-    class Meta:
-        model = StorageUnit
-        fields = [
-            'id', 'complex', 'complex_name', 'storage_type', 'unit_number', 'name',
-            'location', 'area', 'capacity', 'features', 'status', 'assigned_unit',
-            'assigned_unit_info', 'monthly_fee', 'is_covered', 'has_electricity',
-            'has_lighting', 'full_code', 'is_available', 'created_at'
+            'contract_number', 'contract_date', 'description', 'recorded_by', 'created_at', 'updated_at'
         ]
 
-class StorageAssignmentSerializer(serializers.ModelSerializer):
-    storage_unit_info = StorageUnitSerializer(source='storage_unit', read_only=True)
+class ContractSerializer(serializers.ModelSerializer):
     unit_info = UnitSerializer(source='unit', read_only=True)
-    created_by_info = UnitSerializer(source='created_by', read_only=True)
+    first_party_info = UserInfoSerializer(source='first_party', read_only=True)
+    second_party_info = UserInfoSerializer(source='second_party', read_only=True)
+    created_by_info = UserInfoSerializer(source='created_by', read_only=True)
     
     class Meta:
-        model = StorageAssignment
+        model = Contract
         fields = [
-            'id', 'storage_unit', 'storage_unit_info', 'unit', 'unit_info',
-            'assignment_type', 'start_date', 'end_date', 'is_active',
-            'monthly_fee', 'is_included_in_charge', 'contract_number',
-            'description', 'created_by', 'created_by_info', 'created_at'
+            'id', 'unit', 'unit_info', 'contract_type', 'contract_number', 'title',
+            'first_party', 'first_party_info', 'second_party', 'second_party_info',
+            'start_date', 'end_date', 'duration_months', 'amount', 'deposit_amount',
+            'status', 'first_party_signed', 'second_party_signed', 'signed_date',
+            'contract_file', 'description', 'created_by', 'created_by_info',
+            'created_at', 'updated_at'
+        ]
+
+class BuildingDetailSerializer(serializers.ModelSerializer):
+    units = UnitSerializer(source='units', many=True, read_only=True)
+    parkings = ParkingSerializer(source='parkings', many=True, read_only=True)
+    warehouses = WarehouseSerializer(source='warehouses', many=True, read_only=True)
+    board_members_info = UserInfoSerializer(source='board_members', many=True, read_only=True)
+    total_occupied_units = serializers.SerializerMethodField()
+    available_parkings = serializers.SerializerMethodField()
+    available_warehouses = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Building
+        fields = [
+            'id', 'name', 'code', 'type', 'address', 
+            'total_floors', 'total_units', 'total_parkings', 'total_warehouses', 'description',
+            'board_members', 'board_members_info', 
+            'units', 'parkings', 'warehouses',
+            'total_occupied_units', 'available_parkings', 'available_warehouses',
+            'created_at', 'updated_at'
+        ]
+    
+    def get_total_occupied_units(self, obj):
+        return obj.units.filter(status='occupied').count()
+    
+    def get_available_parkings(self, obj):
+        return obj.parkings.filter(status='available').count()
+    
+    def get_available_warehouses(self, obj):
+        return obj.warehouses.filter(status='available').count()
+
+class UnitDetailSerializer(serializers.ModelSerializer):
+    owner_info = UserInfoSerializer(source='owner', read_only=True)
+    resident_info = UserInfoSerializer(source='resident', read_only=True)
+    building_info = BuildingSerializer(source='building', read_only=True)
+    parkings_info = ParkingSerializer(source='assigned_parkings', many=True, read_only=True)
+    warehouses_info = WarehouseSerializer(source='assigned_warehouses', many=True, read_only=True)
+    transfer_history = UnitTransferHistorySerializer(source='get_transfer_history', many=True, read_only=True)
+    contracts = ContractSerializer(source='contracts', many=True, read_only=True)
+    
+    class Meta:
+        model = Unit
+        fields = [
+            'id', 'unit_number', 'floor', 'area', 'status',
+            'owner', 'owner_info', 'resident', 'resident_info',
+            'building', 'building_info', 'rooms',
+            'parkings_info', 'warehouses_info',
+            'has_parking', 'has_warehouse',
+            'total_parking_count', 'total_warehouse_count',
+            'full_address', 'created_at', 'updated_at',
+            'transfer_history', 'contracts'
         ]

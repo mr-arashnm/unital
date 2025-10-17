@@ -4,7 +4,7 @@ from django.utils.translation import gettext_lazy as _
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
         if not email:
-            raise ValueError(_('ایمیل باید وارد شود'))
+            raise ValueError(_('Email must be entered'))
         email = self.normalize_email(email)
         user = self.model(email=email, **extra_fields)
         user.set_password(password)
@@ -18,8 +18,8 @@ class CustomUserManager(BaseUserManager):
         extra_fields.setdefault('user_type', 'manager')
         
         if extra_fields.get('is_staff') is not True:
-            raise ValueError(_('سوپر کاربر باید is_staff=True باشد'))
+            raise ValueError(_('Superuser must have is_staff=True.'))
         if extra_fields.get('is_superuser') is not True:
-            raise ValueError(_('سوپر کاربر باید is_superuser=True باشد'))
-            
+            raise ValueError(_('Superuser must have is_superuser=True.'))
+
         return self.create_user(email, password, **extra_fields)

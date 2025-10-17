@@ -1,7 +1,7 @@
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from apps.accounts.models import User
-from apps.complexes.models import Complex, Unit
+from apps.complexes.models import Building, Unit
 
 class Team(models.Model):
     TEAM_TYPES = (
@@ -15,7 +15,7 @@ class Team(models.Model):
     )
     
     complex = models.ForeignKey(
-        Complex, 
+        Building, 
         on_delete=models.CASCADE, 
         related_name='teams',
         verbose_name='مجتمع'

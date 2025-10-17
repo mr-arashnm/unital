@@ -11,17 +11,17 @@ from .serializers import UserRegistrationSerializer, UserProfileSerializer
 @permission_classes([AllowAny])
 def register_view(request):
     """
-    ثبت‌نام کاربر جدید
+    signup new user
     """
     serializer = UserRegistrationSerializer(data=request.data)
     if serializer.is_valid():
         user = serializer.save()
         
-        # ایجاد توکن برای کاربر جدید
+        # create JWT token for the new user
         refresh = RefreshToken.for_user(user)
         
         return Response({
-            'message': 'ثبت‌نام با موفقیت انجام شد',
+            'message': 'Registration successful',
             'user_id': user.id,
             'email': user.email,
             'first_name': user.first_name,
@@ -37,14 +37,14 @@ def register_view(request):
 @permission_classes([AllowAny])
 def login_view(request):
     """
-    ورود کاربر و دریافت توکن JWT
+    
     """
     email = request.data.get('email')
     password = request.data.get('password')
     
     if not email or not password:
         return Response(
-            {'error': 'ایمیل و رمز عبور الزامی است'}, 
+            {'error': 'email and password are required'}, 
             status=status.HTTP_400_BAD_REQUEST
         )
     
@@ -256,8 +256,8 @@ def user_complexes_view(request):
     complexes = []
     
     if user.user_type in ['manager', 'board_member']:
-        from apps.complexes.models import Complex
-        complexes = Complex.objects.filter(board_members=user)
+        from apps.complexes.models import Building
+        complexes = Building.objects.filter(board_members=user)
     elif user.user_type == 'owner':
         from apps.complexes.models import Unit
         user_units = Unit.objects.filter(owner=user)

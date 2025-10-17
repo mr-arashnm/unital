@@ -1,7 +1,7 @@
 from django.db import models
 from django.core.validators import MinValueValidator
 from apps.accounts.models import User
-from apps.complexes.models import Unit, Complex
+from apps.complexes.models import Unit, Building
 
 class ChargeTemplate(models.Model):
     CHARGE_TYPES = (
@@ -17,7 +17,7 @@ class ChargeTemplate(models.Model):
     )
     
     complex = models.ForeignKey(
-        Complex, 
+        Building, 
         on_delete=models.CASCADE, 
         related_name='charge_templates',
         verbose_name='مجتمع'

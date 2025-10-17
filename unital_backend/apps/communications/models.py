@@ -1,6 +1,6 @@
 from django.db import models
 from apps.accounts.models import User
-from apps.complexes.models import Complex, Unit
+from apps.complexes.models import Building, Unit
 
 class Notification(models.Model):
     NOTIFICATION_TYPES = (
@@ -34,7 +34,7 @@ class Notification(models.Model):
     
     # مجتمع مربوطه
     complex = models.ForeignKey(
-        Complex, 
+        Building, 
         on_delete=models.CASCADE, 
         verbose_name='مجتمع'
     )
@@ -100,7 +100,7 @@ class Meeting(models.Model):
     
     # مجتمع مربوطه
     complex = models.ForeignKey(
-        Complex, 
+        Building, 
         on_delete=models.CASCADE, 
         verbose_name='مجتمع'
     )
@@ -196,7 +196,7 @@ class Announcement(models.Model):
     
     # هدف
     complex = models.ForeignKey(
-        Complex, 
+        Building, 
         on_delete=models.CASCADE, 
         verbose_name='مجتمع'
     )

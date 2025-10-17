@@ -27,14 +27,14 @@ class UserLoginSerializer(serializers.Serializer):
         if email and password:
             user = authenticate(email=email, password=password)
             if not user:
-                raise serializers.ValidationError('ایمیل یا رمز عبور اشتباه است')
+                raise serializers.ValidationError('email or password is incorrect')
             if not user.is_active:
-                raise serializers.ValidationError('حساب کاربری غیرفعال است')
-                
+                raise serializers.ValidationError('Account is inactive')
+
             data['user'] = user
             return data
         else:
-            raise serializers.ValidationError('ایمیل و رمز عبور باید وارد شوند')
+            raise serializers.ValidationError('Email and password must be entered')
 
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:

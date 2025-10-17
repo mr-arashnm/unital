@@ -5,11 +5,8 @@ from .managers import CustomUserManager
 class User(AbstractUser):
     objects = CustomUserManager()
     USER_TYPES = (
-        ('resident', 'ساکن'),
-        ('owner', 'مالک'),
-        ('manager', 'مدیر'),
-        ('staff', 'کارمند'),
-        ('board_member', 'عضو هیئت مدیره'),
+        ('manager', 'manager'),
+        ('staff', 'staff'),
     )
     
     user_type = models.CharField(max_length=20, choices=USER_TYPES, default='resident')
@@ -20,11 +17,11 @@ class User(AbstractUser):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
-    # حذف فیلدهای اضافی از AbstractUser که نیاز نداریم
+    # 
     username = None
     email = models.EmailField(unique=True)
     
-    # تعیین فیلد برای login
+    # for 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['first_name', 'last_name']
     
@@ -33,5 +30,5 @@ class User(AbstractUser):
     
     class Meta:
         db_table = 'users'
-        verbose_name = 'کاربر'
-        verbose_name_plural = 'کاربران'
+        verbose_name = 'user'
+        verbose_name_plural = 'users'
