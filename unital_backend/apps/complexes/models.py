@@ -605,6 +605,7 @@ class UnitTransferHistory(models.Model):
         null=True,
         verbose_name='contract time'
     )
+    #contract_end_date
     description = models.TextField(
         blank=True, 
         null=True,

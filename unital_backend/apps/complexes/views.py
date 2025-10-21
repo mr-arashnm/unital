@@ -13,7 +13,7 @@ from apps.accounts.models import User
 class BuildingViewSet(viewsets.ModelViewSet):
     queryset = Building.objects.all()
     serializer_class = BuildingSerializer
-    permission_classes = [IsAuthenticated]
+    #permission_classes = [IsAuthenticated]
     
     def get_serializer_class(self):
         if self.action == 'retrieve':
@@ -75,7 +75,7 @@ class BuildingViewSet(viewsets.ModelViewSet):
 class UnitViewSet(viewsets.ModelViewSet):
     queryset = Unit.objects.all()
     serializer_class = UnitSerializer
-    permission_classes = [IsAuthenticated]
+    #permission_classes = [IsAuthenticated]
     
     def get_serializer_class(self):
         if self.action == 'retrieve':
@@ -236,7 +236,7 @@ class UnitViewSet(viewsets.ModelViewSet):
 class ParkingViewSet(viewsets.ModelViewSet):
     queryset = Parking.objects.all()
     serializer_class = ParkingSerializer
-    permission_classes = [IsAuthenticated]
+    #permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
         user = self.request.user
@@ -252,7 +252,7 @@ class ParkingViewSet(viewsets.ModelViewSet):
 class WarehouseViewSet(viewsets.ModelViewSet):
     queryset = Warehouse.objects.all()
     serializer_class = WarehouseSerializer
-    permission_classes = [IsAuthenticated]
+    #permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
         user = self.request.user
@@ -268,7 +268,7 @@ class WarehouseViewSet(viewsets.ModelViewSet):
 class ContractViewSet(viewsets.ModelViewSet):
     queryset = Contract.objects.all()
     serializer_class = ContractSerializer
-    permission_classes = [IsAuthenticated]
+    #permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
         user = self.request.user
@@ -304,7 +304,7 @@ class ContractViewSet(viewsets.ModelViewSet):
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+#@#permission_classes([IsAuthenticated])
 def unit_transfer_history(request, unit_id):
     """دریافت تاریخچه انتقالات یک واحد"""
     try:
@@ -333,7 +333,7 @@ def unit_transfer_history(request, unit_id):
         )
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+#@#permission_classes([IsAuthenticated])
 def change_unit_ownership(request, unit_id):
     """تغییر مالکیت واحد"""
     try:
@@ -376,7 +376,7 @@ def change_unit_ownership(request, unit_id):
         )
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+#@#permission_classes([IsAuthenticated])
 def change_unit_residency(request, unit_id):
     """تغییر سکونت واحد"""
     try:
