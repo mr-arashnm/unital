@@ -1,8 +1,7 @@
 from rest_framework import serializers
 from .models import Facility, FacilityBooking, FacilityMaintenance, FacilityUsageRule, FacilityImage
 from django.contrib.auth import get_user_model
-# حذف importهای غیرضروری اگر building ندارید
-# from apps.complexes.serializers import UnitSerializer, BuildingSerializer
+from apps.complexes.serializers import UnitSerializer, BuildingSerializer  # Building serializer for complex info
 
 User = get_user_model()
 
@@ -27,8 +26,7 @@ class FacilityUsageRuleSerializer(serializers.ModelSerializer):
         fields = ['id', 'rule', 'is_mandatory', 'created_at']
 
 class FacilitySerializer(serializers.ModelSerializer):
-    # ❌ حذف فیلدهای مربوط به building چون در مدل وجود ندارند
-    # building_info = BuildingSerializer(source='building', read_only=True)
+    complex_info = BuildingSerializer(source='complex', read_only=True)
     images = FacilityImageSerializer(many=True, read_only=True)
     usage_rules = FacilityUsageRuleSerializer(many=True, read_only=True)
     upcoming_bookings_count = serializers.SerializerMethodField()
@@ -37,8 +35,7 @@ class FacilitySerializer(serializers.ModelSerializer):
     class Meta:
         model = Facility
         fields = [
-            'id', 'name', 'facility_type', 'description', 
-            # ❌ حذف 'building', 'building_info'
+            'id', 'name', 'facility_type', 'description', 'complex', 'complex_info',
             'capacity', 'min_advance_booking', 'max_advance_booking',
             'opening_time', 'closing_time', 'rules', 'hourly_rate', 'is_free',
             'is_active', 'under_maintenance', 'images', 'usage_rules',
@@ -85,18 +82,16 @@ class FacilityMaintenanceSerializer(serializers.ModelSerializer):
         ]
 
 class FacilityDetailSerializer(serializers.ModelSerializer):
-    # ❌ حذف فیلدهای مربوط به building
-    # building_info = BuildingSerializer(source='building', read_only=True)
+    complex_info = BuildingSerializer(source='complex', read_only=True)
     images = FacilityImageSerializer(many=True, read_only=True)
     usage_rules = FacilityUsageRuleSerializer(many=True, read_only=True)
-    bookings = FacilityBookingSerializer(many=True, read_only=True)  # ❌ source حذف شد
-    maintenance_records = FacilityMaintenanceSerializer(many=True, read_only=True)  # ❌ source حذف شد
+    bookings = FacilityBookingSerializer(source='bookings', many=True, read_only=True)
+    maintenance_records = FacilityMaintenanceSerializer(source='maintenances', many=True, read_only=True)
     
     class Meta:
         model = Facility
         fields = [
-            'id', 'name', 'facility_type', 'description', 
-            # ❌ حذف 'building', 'building_info'
+            'id', 'name', 'facility_type', 'description', 'complex', 'complex_info',
             'capacity', 'min_advance_booking', 'max_advance_booking',
             'opening_time', 'closing_time', 'rules', 'hourly_rate', 'is_free',
             'is_active', 'under_maintenance', 'images', 'usage_rules',

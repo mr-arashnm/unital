@@ -9,6 +9,9 @@ from .serializers import (
     UnitTransferHistorySerializer, ContractSerializer, ParkingSerializer, WarehouseSerializer
 )
 from apps.accounts.models import User
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
 
 class BuildingViewSet(viewsets.ModelViewSet):
     queryset = Building.objects.all()
@@ -379,6 +382,63 @@ def change_unit_ownership(request, unit_id):
 #@#permission_classes([IsAuthenticated])
 def change_unit_residency(request, unit_id):
     """تغییر سکونت واحد"""
+    
+@api_view(['GET'])
+def unit_detail_in_building(request, building_id, unit_id):
+    """Return unit detail verifying it belongs to the building"""
+    try:
+        unit = Unit.objects.get(id=unit_id, building_id=building_id)
+    except Unit.DoesNotExist:
+        return Response({'error': 'Unit not found in this building'}, status=status.HTTP_404_NOT_FOUND)
+
+    serializer = UnitDetailSerializer(unit)
+    return Response(serializer.data)
+
+@api_view(['GET'])
+def unit_transfer_history_in_building(request, building_id, unit_id):
+    try:
+        unit = Unit.objects.get(id=unit_id, building_id=building_id)
+    except Unit.DoesNotExist:
+        return Response({'error': 'Unit not found in this building'}, status=status.HTTP_404_NOT_FOUND)
+
+    history = unit.get_transfer_history()
+    serializer = UnitTransferHistorySerializer(history, many=True)
+    return Response({'unit': unit.full_address, 'transfer_history': serializer.data})
+
+@api_view(['GET'])
+def unit_transfer_history_detail_in_building(request, building_id, unit_id, history_id):
+    try:
+        unit = Unit.objects.get(id=unit_id, building_id=building_id)
+    except Unit.DoesNotExist:
+        return Response({'error': 'Unit not found in this building'}, status=status.HTTP_404_NOT_FOUND)
+
+    try:
+        history = unit.transfer_history.get(id=history_id)
+    except Exception:
+        return Response({'error': 'Transfer history not found for this unit'}, status=status.HTTP_404_NOT_FOUND)
+
+    serializer = UnitTransferHistorySerializer(history)
+    return Response(serializer.data)
+
+@api_view(['GET'])
+def parking_detail_in_building(request, building_id, parking_id):
+    try:
+        parking = Parking.objects.get(id=parking_id, building_id=building_id)
+    except Parking.DoesNotExist:
+        return Response({'error': 'Parking not found in this building'}, status=status.HTTP_404_NOT_FOUND)
+
+    serializer = ParkingSerializer(parking)
+    return Response(serializer.data)
+
+@api_view(['GET'])
+def warehouse_detail_in_building(request, building_id, warehouse_id):
+    try:
+        warehouse = Warehouse.objects.get(id=warehouse_id, building_id=building_id)
+    except Warehouse.DoesNotExist:
+        return Response({'error': 'Warehouse not found in this building'}, status=status.HTTP_404_NOT_FOUND)
+
+    serializer = WarehouseSerializer(warehouse)
+    return Response(serializer.data)
     try:
         unit = Unit.objects.get(id=unit_id)
         new_resident_id = request.data.get('new_resident_id')
