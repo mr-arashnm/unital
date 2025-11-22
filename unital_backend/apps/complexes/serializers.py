@@ -4,47 +4,45 @@ from .models import Building, Unit, UnitTransferHistory, Parking, Warehouse, Con
 
 User = get_user_model()
 
-
+# not use
 class UserInfoSerializer(serializers.ModelSerializer):
     full_name = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'user_type', 'full_name']
+        # avoid referencing removed `username` field and provide a unique
+        # component name so drf-spectacular does not collide with other
+        # UserInfo serializers across apps
+        ref_name = 'ComplexesUserInfo'
+        fields = ['id', 'first_name', 'last_name', 'email', 'user_type', 'full_name']
 
     def get_full_name(self, obj):
-        return f"{obj.first_name} {obj.last_name}".strip() or obj.username
+        # User model in this project does not include `username`.
+        # fall back to email if names are empty.
+        return f"{obj.first_name} {obj.last_name}".strip() or getattr(obj, 'email', '')
 
 
 class BuildingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Building
-        fields = [
-            'id', 'name', 'code', 'type', 'address',
-            'total_floors', 'total_units',
-            'total_parkings', 'total_warehouses',
-            'description', 'created_at', 'updated_at'
-        ]
+        fields = ["id", "name", "address", "type"]
 
 
 class UnitSerializer(serializers.ModelSerializer):
-    owner_info = UserInfoSerializer(source='owner', read_only=True)
-    resident_info = UserInfoSerializer(source='resident', read_only=True)
-    building_info = BuildingSerializer(source='building', read_only=True)
 
     class Meta:
         model = Unit
-        fields = [
-            'id', 'unit_number', 'floor', 'area', 'status',
-            'owner', 'owner_info', 'resident', 'resident_info',
-            'building', 'building_info', 'rooms',
-            'has_parking', 'has_warehouse',
-            'total_parking_count', 'total_warehouse_count',
-            'full_address', 'created_at', 'updated_at'
-        ]
+        fields = ['id', 'unit_number', 'floor', 'area']
 
 
 class ParkingSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Parking
+        fields = ['id', 'floor', 'code', 'status']
+
+# not use
+class ParkingDetailSerializer(serializers.ModelSerializer):
     building_name = serializers.CharField(source='building.name', read_only=True)
     unit_info = UnitSerializer(source='unit', read_only=True)
 
@@ -57,6 +55,13 @@ class ParkingSerializer(serializers.ModelSerializer):
 
 
 class WarehouseSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Warehouse
+        fields = ['id', 'floor', 'code', 'area', 'status']
+
+# not use
+class WarehouseDetailSerializer(serializers.ModelSerializer):
     building_name = serializers.CharField(source='building.name', read_only=True)
     unit_info = UnitSerializer(source='unit', read_only=True)
 
@@ -65,6 +70,21 @@ class WarehouseSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'building', 'building_name', 'unit', 'unit_info',
             'floor', 'code', 'status', 'area', 'created_at', 'updated_at'
+        ]
+
+
+class UnitDetailSerializer(serializers.ModelSerializer):
+    parking = ParkingSerializer(source='parkings', read_only=True, many=True)
+    warehouse = WarehouseSerializer(source='warehouses', read_only=True, many=True)
+
+    class Meta:
+        model = Unit
+        fields = [
+            'id', 'unit_number', 'floor', 'area', 'status',
+            'owner', 'resident',
+            'rooms',
+            'parking',
+            'warehouse',
         ]
 
 
@@ -108,50 +128,12 @@ class BuildingDetailSerializer(serializers.ModelSerializer):
     units = UnitSerializer(many=True, read_only=True)
     parkings = ParkingSerializer(many=True, read_only=True)
     warehouses = WarehouseSerializer(many=True, read_only=True)
-    board_members_info = UserInfoSerializer(many=True, read_only=True, source='board_members')
-    total_occupied_units = serializers.SerializerMethodField()
-    available_parkings = serializers.SerializerMethodField()
-    available_warehouses = serializers.SerializerMethodField()
+
 
     class Meta:
         model = Building
         fields = [
-            'id', 'name', 'code', 'type', 'address',
+            'id', 'name', 'address', 'type', 'created_at',
             'total_floors', 'total_units', 'total_parkings', 'total_warehouses', 'description',
-            'board_members', 'board_members_info',
             'units', 'parkings', 'warehouses',
-            'total_occupied_units', 'available_parkings', 'available_warehouses',
-            'created_at', 'updated_at'
-        ]
-
-    def get_total_occupied_units(self, obj):
-        return obj.units.filter(status='occupied').count()
-
-    def get_available_parkings(self, obj):
-        return obj.parkings.filter(status='available').count()
-
-    def get_available_warehouses(self, obj):
-        return obj.warehouses.filter(status='available').count()
-
-
-class UnitDetailSerializer(serializers.ModelSerializer):
-    owner_info = UserInfoSerializer(source='owner', read_only=True)
-    resident_info = UserInfoSerializer(source='resident', read_only=True)
-    building_info = BuildingSerializer(source='building', read_only=True)
-    parkings_info = ParkingSerializer(many=True, read_only=True)
-    warehouses_info = WarehouseSerializer(many=True, read_only=True)
-    transfer_history = UnitTransferHistorySerializer(many=True, read_only=True)
-    contracts = ContractSerializer(many=True, read_only=True)
-
-    class Meta:
-        model = Unit
-        fields = [
-            'id', 'unit_number', 'floor', 'area', 'status',
-            'owner', 'owner_info', 'resident', 'resident_info',
-            'building', 'building_info', 'rooms',
-            'parkings_info', 'warehouses_info',
-            'has_parking', 'has_warehouse',
-            'total_parking_count', 'total_warehouse_count',
-            'full_address', 'created_at', 'updated_at',
-            'transfer_history', 'contracts'
         ]

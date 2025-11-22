@@ -10,7 +10,8 @@ class UserInfoSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = User
-        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'user_type', 'full_name']
+        ref_name = 'FacilitiesUserInfo'
+        fields = ['id', 'first_name', 'last_name', 'email', 'user_type', 'full_name']
     
     def get_full_name(self, obj):
         return f"{obj.first_name} {obj.last_name}".strip() or obj.username

@@ -11,7 +11,9 @@ User = get_user_model()
 class UserInfoSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'user_type']
+        # unique ref_name to avoid collisions with other apps
+        ref_name = 'CommunicationsUserInfo'
+        fields = ['id', 'first_name', 'last_name', 'email', 'user_type']
 
 class NotificationSerializer(serializers.ModelSerializer):
     created_by_info = UserInfoSerializer(source='created_by', read_only=True)

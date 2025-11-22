@@ -6,7 +6,10 @@ from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import User
 from .serializers import UserRegistrationSerializer, UserProfileSerializer
+from drf_spectacular.utils import extend_schema
+from .serializers import UserLoginSerializer
 
+@extend_schema(request=UserRegistrationSerializer, responses={201: UserRegistrationSerializer})
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def register_view(request):
@@ -33,6 +36,7 @@ def register_view(request):
     
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+@extend_schema(request=UserLoginSerializer, responses={200: UserProfileSerializer})
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def login_view(request):
@@ -79,6 +83,7 @@ def login_view(request):
         'refresh_token_expires_in': 86400  # 24 hours
     }, status=status.HTTP_200_OK)
 
+@extend_schema(responses={200: None})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def logout_view(request):
@@ -91,6 +96,7 @@ def logout_view(request):
         'message': 'خروج موفقیت‌آمیز بود'
     }, status=status.HTTP_200_OK)
 
+@extend_schema(request=None, responses={200: None})
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def refresh_token_view(request):
@@ -124,6 +130,7 @@ def refresh_token_view(request):
             status=status.HTTP_400_BAD_REQUEST
         )
 
+@extend_schema(request=UserProfileSerializer, responses={200: UserProfileSerializer})
 @api_view(['GET', 'PUT'])
 @permission_classes([IsAuthenticated])
 def profile_view(request):
@@ -148,6 +155,7 @@ def profile_view(request):
             })
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+@extend_schema(request=None, responses={200: None})
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def verify_account_view(request):
@@ -181,6 +189,7 @@ def verify_account_view(request):
             status=status.HTTP_404_NOT_FOUND
         )
 
+@extend_schema(request=None, responses={200: None})
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def reset_password_request_view(request):
@@ -211,6 +220,7 @@ def reset_password_request_view(request):
             'message': 'ایمیل بازنشانی رمز عبور ارسال شد'
         }, status=status.HTTP_200_OK)
 
+@extend_schema(request=None, responses={200: None})
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def reset_password_confirm_view(request):
@@ -246,6 +256,7 @@ def reset_password_confirm_view(request):
             status=status.HTTP_404_NOT_FOUND
         )
 
+@extend_schema(responses={200: None})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def user_complexes_view(request):
