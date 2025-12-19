@@ -34,11 +34,11 @@ class FacilityAdmin(admin.ModelAdmin):
     list_editable = ('is_active', 'under_maintenance', 'hourly_rate')
     
     fieldsets = (
-        ('اطلاعات امکان', {'fields': ('complex', 'name', 'facility_type', 'description')}),
-        ('ظرفیت و زمان‌بندی', {'fields': ('capacity', 'min_advance_booking', 'max_advance_booking', 'opening_time', 'closing_time')}),
-        ('هزینه و قوانین', {'fields': ('hourly_rate', 'is_free', 'rules')}),
-        ('وضعیت', {'fields': ('is_active', 'under_maintenance')}),
-        ('تاریخ‌ها', {'fields': ('created_at', 'updated_at')}),
+        ('Facility information', {'fields': ('complex', 'name', 'facility_type', 'description')}),
+        ('Capacity and scheduling', {'fields': ('capacity', 'min_advance_booking', 'max_advance_booking', 'opening_time', 'closing_time')}),
+        ('Cost and rules', {'fields': ('hourly_rate', 'is_free', 'rules')}),
+        ('Status', {'fields': ('is_active', 'under_maintenance')}),
+        ('Dates', {'fields': ('created_at', 'updated_at')}),
     )
     
     readonly_fields = ('created_at', 'updated_at')
@@ -55,11 +55,11 @@ class FacilityBookingAdmin(admin.ModelAdmin):
     readonly_fields = ('created_at', 'updated_at', 'approved_at', 'duration_hours')
     
     fieldsets = (
-        ('اطلاعات رزرو', {'fields': ('facility', 'user', 'purpose', 'participants_count', 'special_requirements')}),
-        ('زمان‌بندی', {'fields': ('start_time', 'end_time', 'duration_hours')}),
-        ('وضعیت و تأیید', {'fields': ('status', 'approved_by', 'approved_at')}),
-        ('هزینه', {'fields': ('total_cost', 'is_paid')}),
-        ('تاریخ‌ها', {'fields': ('created_at', 'updated_at')}),
+        ('Booking information', {'fields': ('facility', 'user', 'purpose', 'participants_count', 'special_requirements')}),
+        ('Scheduling', {'fields': ('start_time', 'end_time', 'duration_hours')}),
+        ('Status & approval', {'fields': ('status', 'approved_by', 'approved_at')}),
+        ('Cost', {'fields': ('total_cost', 'is_paid')}),
+        ('Dates', {'fields': ('created_at', 'updated_at')}),
     )
     
     def get_queryset(self, request):
@@ -73,11 +73,11 @@ class FacilityMaintenanceAdmin(admin.ModelAdmin):
     list_editable = ('status', 'priority')
     
     fieldsets = (
-        ('اطلاعات نگهداری', {'fields': ('facility', 'title', 'maintenance_type', 'description', 'priority')}),
-        ('زمان‌بندی', {'fields': ('scheduled_start', 'scheduled_end', 'actual_start', 'actual_end')}),
-        ('وضعیت و مسئول', {'fields': ('status', 'assigned_to', 'affect_bookings')}),
-        ('مدیریت', {'fields': ('created_by',)}),
-        ('تاریخ‌ها', {'fields': ('created_at', 'updated_at')}),
+        ('Maintenance information', {'fields': ('facility', 'title', 'maintenance_type', 'description', 'priority')}),
+        ('Scheduling', {'fields': ('scheduled_start', 'scheduled_end', 'actual_start', 'actual_end')}),
+        ('Status & assignee', {'fields': ('status', 'assigned_to', 'affect_bookings')}),
+        ('Management', {'fields': ('created_by',)}),
+        ('Dates', {'fields': ('created_at', 'updated_at')}),
     )
     
     readonly_fields = ('created_at', 'updated_at')

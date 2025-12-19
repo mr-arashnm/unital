@@ -23,9 +23,14 @@ class UserInfoSerializer(serializers.ModelSerializer):
 
 
 class BuildingSerializer(serializers.ModelSerializer):
+    features = serializers.SerializerMethodField()
+
     class Meta:
         model = Building
-        fields = ["id", "name", "address", "type"]
+        fields = ["id", "name", "address", "type", "features"]
+
+    def get_features(self, obj):
+        return list(obj.features.values_list('key', flat=True))
 
 
 class UnitSerializer(serializers.ModelSerializer):
@@ -128,6 +133,7 @@ class BuildingDetailSerializer(serializers.ModelSerializer):
     units = UnitSerializer(many=True, read_only=True)
     parkings = ParkingSerializer(many=True, read_only=True)
     warehouses = WarehouseSerializer(many=True, read_only=True)
+    features = serializers.SerializerMethodField()
 
 
     class Meta:
@@ -136,4 +142,8 @@ class BuildingDetailSerializer(serializers.ModelSerializer):
             'id', 'name', 'address', 'type', 'created_at',
             'total_floors', 'total_units', 'total_parkings', 'total_warehouses', 'description',
             'units', 'parkings', 'warehouses',
+            'features',
         ]
+
+    def get_features(self, obj):
+        return list(obj.features.values_list('key', flat=True))

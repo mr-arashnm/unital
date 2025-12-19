@@ -30,6 +30,20 @@ class TransactionSerializer(serializers.ModelSerializer):
             'created_at'
         ]
 
+    def validate(self, data):
+        charge = data.get('charge')
+        amount = data.get('amount')
+        if amount is None or amount <= 0:
+            raise serializers.ValidationError({'amount': 'مبلغ تراکنش باید بزرگتر از صفر باشد'})
+
+        # If charge provided, ensure we don't accept amounts greater than remaining_amount
+        if charge is not None:
+            remaining = charge.remaining_amount or charge.amount
+            if amount > remaining:
+                raise serializers.ValidationError({'amount': 'مبلغ تراکنش بیشتر از مبلغ باقیمانده شارژ است'})
+
+        return data
+
 class InvoiceSerializer(serializers.ModelSerializer):
     unit_info = UnitSerializer(source='unit', read_only=True)
     

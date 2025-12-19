@@ -9,9 +9,9 @@ class ChargeTemplateAdmin(admin.ModelAdmin):
     list_editable = ('is_active', 'amount')
     
     fieldsets = (
-        ('اطلاعات الگو', {'fields': ('complex', 'name', 'charge_type', 'amount')}),
-        ('توضیحات', {'fields': ('description', 'is_active')}),
-        ('تاریخ‌ها', {'fields': ('created_at', 'updated_at')}),
+        ('Template information', {'fields': ('complex', 'name', 'charge_type', 'amount')}),
+        ('Description', {'fields': ('description', 'is_active')}),
+        ('Dates', {'fields': ('created_at', 'updated_at')}),
     )
     
     readonly_fields = ('created_at', 'updated_at')
@@ -24,10 +24,10 @@ class ChargeAdmin(admin.ModelAdmin):
     readonly_fields = ('created_at', 'updated_at', 'remaining_amount')
     
     fieldsets = (
-        ('اطلاعات شارژ', {'fields': ('unit', 'template', 'period', 'amount', 'due_date')}),
-        ('وضعیت پرداخت', {'fields': ('status', 'paid_amount', 'remaining_amount', 'description')}),
-        ('مدیریت', {'fields': ('created_by',)}),
-        ('تاریخ‌ها', {'fields': ('created_at', 'updated_at')}),
+        ('Charge information', {'fields': ('unit', 'template', 'period', 'amount', 'due_date')}),
+        ('Payment status', {'fields': ('status', 'paid_amount', 'remaining_amount', 'description')}),
+        ('Management', {'fields': ('created_by',)}),
+        ('Dates', {'fields': ('created_at', 'updated_at')}),
     )
     
     def get_queryset(self, request):
@@ -41,9 +41,9 @@ class TransactionAdmin(admin.ModelAdmin):
     readonly_fields = ('created_at', 'updated_at')
     
     fieldsets = (
-        ('اطلاعات تراکنش', {'fields': ('charge', 'amount', 'payment_method', 'status')}),
-        ('اطلاعات پرداخت', {'fields': ('reference_id', 'payment_date', 'description')}),
-        ('تاریخ‌ها', {'fields': ('created_at', 'updated_at')}),
+        ('Transaction information', {'fields': ('charge', 'amount', 'payment_method', 'status')}),
+        ('Payment information', {'fields': ('reference_id', 'payment_date', 'description')}),
+        ('Dates', {'fields': ('created_at', 'updated_at')}),
     )
 
 @admin.register(Invoice)
@@ -53,9 +53,9 @@ class InvoiceAdmin(admin.ModelAdmin):
     search_fields = ('unit__unit_number', 'unit__building__complex__name')
     
     fieldsets = (
-        ('اطلاعات فاکتور', {'fields': ('unit', 'period', 'total_amount')}),
-        ('وضعیت پرداخت', {'fields': ('paid_amount', 'remaining_amount', 'is_paid', 'due_date')}),
-        ('تاریخ‌ها', {'fields': ('created_at', 'updated_at')}),
+        ('Invoice information', {'fields': ('unit', 'period', 'total_amount')}),
+        ('Payment status', {'fields': ('paid_amount', 'remaining_amount', 'is_paid', 'due_date')}),
+        ('Dates', {'fields': ('created_at', 'updated_at')}),
     )
     
     readonly_fields = ('created_at', 'updated_at')

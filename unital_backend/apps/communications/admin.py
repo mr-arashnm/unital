@@ -22,11 +22,11 @@ class NotificationAdmin(admin.ModelAdmin):
     readonly_fields = ('sent_at', 'created_at', 'updated_at')
     
     fieldsets = (
-        ('اطلاعات اطلاع‌رسانی', {'fields': ('title', 'message', 'notification_type', 'target_type')}),
-        ('مخاطبان', {'fields': ('specific_users', 'complex')}),
-        ('زمان‌بندی', {'fields': ('is_sent', 'scheduled_at', 'sent_at')}),
-        ('مدیریت', {'fields': ('created_by',)}),
-        ('تاریخ‌ها', {'fields': ('created_at', 'updated_at')}),
+        ('Notification information', {'fields': ('title', 'message', 'notification_type', 'target_type')}),
+        ('Recipients', {'fields': ('specific_users', 'complex')}),
+        ('Scheduling', {'fields': ('is_sent', 'scheduled_at', 'sent_at')}),
+        ('Management', {'fields': ('created_by',)}),
+        ('Dates', {'fields': ('created_at', 'updated_at')}),
     )
     
     filter_horizontal = ('specific_users',)
@@ -42,10 +42,10 @@ class MeetingAdmin(admin.ModelAdmin):
     readonly_fields = ('created_at', 'updated_at')
     
     fieldsets = (
-        ('اطلاعات جلسه', {'fields': ('title', 'meeting_type', 'description', 'agenda')}),
-        ('زمان و مکان', {'fields': ('scheduled_date', 'location', 'duration')}),
-        ('مدیریت', {'fields': ('complex', 'created_by')}),
-        ('تاریخ‌ها', {'fields': ('created_at', 'updated_at')}),
+        ('Meeting information', {'fields': ('title', 'meeting_type', 'description', 'agenda')}),
+        ('Time & location', {'fields': ('scheduled_date', 'location', 'duration')}),
+        ('Management', {'fields': ('complex', 'created_by')}),
+        ('Dates', {'fields': ('created_at', 'updated_at')}),
     )
     inlines = [MeetingAttendanceInline]
     
@@ -59,11 +59,11 @@ class MeetingMinuteAdmin(admin.ModelAdmin):
     readonly_fields = ('created_at', 'updated_at')
     
     fieldsets = (
-        ('اطلاعات صورتجلسه', {'fields': ('meeting',)}),
-        ('محتوا', {'fields': ('content', 'decisions', 'action_items')}),
-        ('امضاها', {'fields': ('signed_by',)}),
-        ('مدیریت', {'fields': ('created_by',)}),
-        ('تاریخ‌ها', {'fields': ('created_at', 'updated_at')}),
+        ('Minute information', {'fields': ('meeting',)}),
+        ('Content', {'fields': ('content', 'decisions', 'action_items')}),
+        ('Signatories', {'fields': ('signed_by',)}),
+        ('Management', {'fields': ('created_by',)}),
+        ('Dates', {'fields': ('created_at', 'updated_at')}),
     )
     
     filter_horizontal = ('signed_by',)
@@ -76,11 +76,11 @@ class AnnouncementAdmin(admin.ModelAdmin):
     list_editable = ('is_published', 'priority')
     
     fieldsets = (
-        ('اطلاعات اطلاعیه', {'fields': ('title', 'content', 'priority')}),
-        ('هدف', {'fields': ('complex', 'target_units')}),
-        ('انتشار', {'fields': ('is_published', 'publish_date', 'expiry_date')}),
-        ('مدیریت', {'fields': ('created_by',)}),
-        ('تاریخ‌ها', {'fields': ('created_at', 'updated_at')}),
+        ('Announcement information', {'fields': ('title', 'content', 'priority')}),
+        ('Target', {'fields': ('complex', 'target_units')}),
+        ('Publication', {'fields': ('is_published', 'publish_date', 'expiry_date')}),
+        ('Management', {'fields': ('created_by',)}),
+        ('Dates', {'fields': ('created_at', 'updated_at')}),
     )
     
     filter_horizontal = ('target_units',)
@@ -93,10 +93,10 @@ class SupportTicketAdmin(admin.ModelAdmin):
     readonly_fields = ('submitted_at', 'assigned_at', 'resolved_at', 'closed_at')
     
     fieldsets = (
-        ('اطلاعات تیکت', {'fields': ('title', 'description', 'ticket_type', 'priority')}),
-        ('وضعیت', {'fields': ('status', 'assigned_to')}),
-        ('کاربر و واحد', {'fields': ('submitted_by', 'unit')}),
-        ('زمان‌ها', {'fields': ('submitted_at', 'assigned_at', 'resolved_at', 'closed_at')}),
+        ('Ticket information', {'fields': ('title', 'description', 'ticket_type', 'priority')}),
+        ('Status', {'fields': ('status', 'assigned_to')}),
+        ('User & unit', {'fields': ('submitted_by', 'unit')}),
+        ('Times', {'fields': ('submitted_at', 'assigned_at', 'resolved_at', 'closed_at')}),
     )
     
     inlines = [TicketResponseInline]

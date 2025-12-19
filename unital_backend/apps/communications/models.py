@@ -1,62 +1,83 @@
 from django.db import models
 from apps.accounts.models import User
 from apps.complexes.models import Building, Unit
+from django.db.models import JSONField
+
+
+class Team(models.Model):
+    """Represents an internal team/department (e.g. security, gardening, maintenance)."""
+    name = models.CharField(max_length=100, unique=True, verbose_name='Name')
+    members = models.ManyToManyField(User, blank=True, related_name='teams', verbose_name='Members')
+
+    class Meta:
+        verbose_name = 'Team'
+        verbose_name_plural = 'Teams'
+
+    def __str__(self):
+        return self.name
 
 class Notification(models.Model):
     NOTIFICATION_TYPES = (
-        ('charge', 'شارژ'),
-        ('meeting', 'جلسه'),
-        ('maintenance', 'تعمیرات'),
-        ('security', 'امنیتی'),
-        ('general', 'عمومی'),
-        ('urgent', 'فوری'),
+        ('charge', 'Charge'),
+        ('meeting', 'Meeting'),
+        ('maintenance', 'Maintenance'),
+        ('security', 'Security'),
+        ('general', 'General'),
+        ('urgent', 'Urgent'),
     )
     
     TARGET_TYPES = (
-        ('all', 'همه ساکنین'),
-        ('owners', 'مالکین'),
-        ('residents', 'ساکنین'),
-        ('board', 'هیئت مدیره'),
-        ('specific', 'کاربران خاص'),
+        ('all', 'All residents'),
+        ('owners', 'Owners'),
+        ('residents', 'Residents'),
+        ('board', 'Board'),
+        ('specific', 'Specific users'),
     )
     
-    title = models.CharField(max_length=200, verbose_name='عنوان')
-    message = models.TextField(verbose_name='پیام')
-    notification_type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES, verbose_name='نوع اطلاع‌رسانی')
-    target_type = models.CharField(max_length=20, choices=TARGET_TYPES, verbose_name='مخاطبان')
+    title = models.CharField(max_length=200, verbose_name='Title')
+    message = models.TextField(verbose_name='Message')
+    notification_type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES, verbose_name='Notification type')
+    target_type = models.CharField(max_length=20, choices=TARGET_TYPES, verbose_name='Recipients')
     
     # مخاطبان خاص
     specific_users = models.ManyToManyField(
         User, 
         blank=True,
-        verbose_name='کاربران خاص'
+        verbose_name='Specific users'
     )
+
+    # allow targeting by role(s) (e.g. ['owner','resident','manager'])
+    target_roles = JSONField(default=list, blank=True)
+
+    # target specific teams/departments (see Team model below)
+    # teams are optional and allow a message to be visible to multiple groups
+    target_teams = models.ManyToManyField('Team', blank=True, verbose_name='Target teams')
     
-    # مجتمع مربوطه
+    # Related complex
     complex = models.ForeignKey(
         Building, 
         on_delete=models.CASCADE, 
-        verbose_name='مجتمع'
+        verbose_name='Complex'
     )
     
-    # وضعیت ارسال
-    is_sent = models.BooleanField(default=False, verbose_name='ارسال شده')
-    scheduled_at = models.DateTimeField(null=True, blank=True, verbose_name='زمان برنامه‌ریزی شده')
-    sent_at = models.DateTimeField(null=True, blank=True, verbose_name='زمان ارسال')
+    # Send status
+    is_sent = models.BooleanField(default=False, verbose_name='Is sent')
+    scheduled_at = models.DateTimeField(null=True, blank=True, verbose_name='Scheduled at')
+    sent_at = models.DateTimeField(null=True, blank=True, verbose_name='Sent at')
     
     created_by = models.ForeignKey(
         User, 
         on_delete=models.PROTECT, 
         related_name='created_notifications',
-        verbose_name='ایجاد کننده'
+        verbose_name='Created by'
     )
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
-        verbose_name = 'اطلاع‌رسانی'
-        verbose_name_plural = 'اطلاع‌رسانی‌ها'
+        verbose_name = 'Notification'
+        verbose_name_plural = 'Notifications'
         ordering = ['-created_at']
     
     def __str__(self):
@@ -64,60 +85,64 @@ class Notification(models.Model):
 
 class Meeting(models.Model):
     MEETING_TYPES = (
-        ('board', 'هیئت مدیره'),
-        ('general', 'عمومی'),
-        ('committee', 'کمیته'),
-        ('emergency', 'فوری'),
+        ('board', 'Board'),
+        ('general', 'General'),
+        ('committee', 'Committee'),
+        ('emergency', 'Emergency'),
     )
     
     STATUS_CHOICES = (
-        ('scheduled', 'برنامه‌ریزی شده'),
-        ('ongoing', 'در حال برگزاری'),
-        ('completed', 'برگزار شده'),
-        ('cancelled', 'لغو شده'),
+        ('scheduled', 'Scheduled'),
+        ('ongoing', 'Ongoing'),
+        ('completed', 'Completed'),
+        ('cancelled', 'Cancelled'),
     )
     
-    title = models.CharField(max_length=200, verbose_name='عنوان جلسه')
-    meeting_type = models.CharField(max_length=20, choices=MEETING_TYPES, verbose_name='نوع جلسه')
-    description = models.TextField(verbose_name='توضیحات')
-    agenda = models.TextField(verbose_name='دستور جلسه')
+    title = models.CharField(max_length=200, verbose_name='Title')
+    meeting_type = models.CharField(max_length=20, choices=MEETING_TYPES, verbose_name='Meeting type')
+    description = models.TextField(verbose_name='Description')
+    agenda = models.TextField(verbose_name='Agenda')
     
-    # زمان و مکان
-    scheduled_date = models.DateTimeField(verbose_name='زمان برگزاری')
-    location = models.CharField(max_length=200, verbose_name='محل برگزاری')
-    duration = models.PositiveIntegerField(default=60, verbose_name='مدت زمان (دقیقه)')
+    # Time and location
+    scheduled_date = models.DateTimeField(verbose_name='Scheduled date')
+    location = models.CharField(max_length=200, verbose_name='Location')
+    duration = models.PositiveIntegerField(default=60, verbose_name='Duration (minutes)')
     
-    # وضعیت
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='scheduled', verbose_name='وضعیت')
+    # Status
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='scheduled', verbose_name='Status')
     
-    # شرکت‌کنندگان
+    # Attendees
     attendees = models.ManyToManyField(
         User,
         through='MeetingAttendance',
         related_name='meetings_attended',
-        verbose_name='شرکت‌کنندگان'
+        verbose_name='Attendees'
     )
     
-    # مجتمع مربوطه
+    # Related complex
     complex = models.ForeignKey(
         Building, 
         on_delete=models.CASCADE, 
-        verbose_name='مجتمع'
+        verbose_name='Complex'
     )
     
     created_by = models.ForeignKey(
         User,
         on_delete=models.PROTECT,
         related_name='created_meetings',
-        verbose_name='ایجاد کننده'
+        verbose_name='Created by'
     )
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    # allow meeting to target specific roles and/or teams
+    target_roles = JSONField(default=list, blank=True)
+    target_teams = models.ManyToManyField('Team', blank=True, verbose_name='Target teams')
     
     class Meta:
-        verbose_name = 'جلسه'
-        verbose_name_plural = 'جلسات'
+        verbose_name = 'Meeting'
+        verbose_name_plural = 'Meetings'
         ordering = ['-scheduled_date']
     
     def __str__(self):
@@ -125,24 +150,24 @@ class Meeting(models.Model):
 
 class MeetingAttendance(models.Model):
     ATTENDANCE_STATUS = (
-        ('invited', 'دعوت شده'),
-        ('confirmed', 'تأیید حضور'),
-        ('declined', 'عدم حضور'),
-        ('attended', 'حاضر شده'),
-        ('absent', 'غایب'),
+        ('invited', 'Invited'),
+        ('confirmed', 'Confirmed'),
+        ('declined', 'Declined'),
+        ('attended', 'Attended'),
+        ('absent', 'Absent'),
     )
     
-    meeting = models.ForeignKey(Meeting, on_delete=models.CASCADE, verbose_name='جلسه')
-    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='کاربر')
-    status = models.CharField(max_length=20, choices=ATTENDANCE_STATUS, default='invited', verbose_name='وضعیت حضور')
+    meeting = models.ForeignKey(Meeting, on_delete=models.CASCADE, verbose_name='Meeting')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='User')
+    status = models.CharField(max_length=20, choices=ATTENDANCE_STATUS, default='invited', verbose_name='Attendance status')
     
-    # زمان‌ها
-    responded_at = models.DateTimeField(null=True, blank=True, verbose_name='زمان پاسخ')
-    actual_attendance = models.BooleanField(null=True, blank=True, verbose_name='حضور فیزیکی')
+    # Times
+    responded_at = models.DateTimeField(null=True, blank=True, verbose_name='Responded at')
+    actual_attendance = models.BooleanField(null=True, blank=True, verbose_name='Physical attendance')
     
     class Meta:
-        verbose_name = 'حضور در جلسه'
-        verbose_name_plural = 'حضور در جلسات'
+        verbose_name = 'Meeting attendance'
+        verbose_name_plural = 'Meeting attendances'
         unique_together = ['meeting', 'user']
     
     def __str__(self):
@@ -153,76 +178,79 @@ class MeetingMinute(models.Model):
         Meeting, 
         on_delete=models.CASCADE, 
         related_name='minutes',
-        verbose_name='جلسه'
+        verbose_name='Meeting'
     )
-    content = models.TextField(verbose_name='متن صورتجلسه')
-    decisions = models.TextField(verbose_name='مصوبات')
-    action_items = models.TextField(verbose_name='اقدامات')
+    content = models.TextField(verbose_name='Content')
+    decisions = models.TextField(verbose_name='Decisions')
+    action_items = models.TextField(verbose_name='Action items')
     
-    # امضا کنندگان
+    # Signatories
     signed_by = models.ManyToManyField(
         User, 
         related_name='signed_minutes',
-        verbose_name='امضا کنندگان'
+        verbose_name='Signatories'
     )
     
     created_by = models.ForeignKey(
         User, 
         on_delete=models.PROTECT, 
-        verbose_name='ثبت کننده'
+        verbose_name='Recorded by'
     )
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
-        verbose_name = 'صورتجلسه'
-        verbose_name_plural = 'صورتجلسات'
+        verbose_name = 'Meeting minute'
+        verbose_name_plural = 'Meeting minutes'
     
     def __str__(self):
-        return f"صورتجلسه {self.meeting.title}"
+        return f"Meeting minute {self.meeting.title}"
 
 class Announcement(models.Model):
     PRIORITY_CHOICES = (
-        ('low', 'کم'),
-        ('normal', 'معمولی'),
-        ('high', 'بالا'),
-        ('urgent', 'فوری'),
+        ('low', 'Low'),
+        ('normal', 'Normal'),
+        ('high', 'High'),
+        ('urgent', 'Urgent'),
     )
     
-    title = models.CharField(max_length=200, verbose_name='عنوان اطلاعیه')
-    content = models.TextField(verbose_name='محتوا')
-    priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='normal', verbose_name='اولویت')
+    title = models.CharField(max_length=200, verbose_name='Title')
+    content = models.TextField(verbose_name='Content')
+    priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='normal', verbose_name='Priority')
     
-    # هدف
+    # Target
     complex = models.ForeignKey(
         Building, 
         on_delete=models.CASCADE, 
-        verbose_name='مجتمع'
+        verbose_name='Complex'
     )
     target_units = models.ManyToManyField(
         Unit, 
         blank=True,
-        verbose_name='واحدهای هدف'
+        verbose_name='Target units'
     )
+    # allow announcement to target roles and/or teams
+    target_roles = JSONField(default=list, blank=True)
+    target_teams = models.ManyToManyField('Team', blank=True, verbose_name='Target teams')
     
-    # وضعیت
-    is_published = models.BooleanField(default=False, verbose_name='منتشر شده')
-    publish_date = models.DateTimeField(null=True, blank=True, verbose_name='تاریخ انتشار')
-    expiry_date = models.DateTimeField(null=True, blank=True, verbose_name='تاریخ انقضا')
+    # Status
+    is_published = models.BooleanField(default=False, verbose_name='Is published')
+    publish_date = models.DateTimeField(null=True, blank=True, verbose_name='Publish date')
+    expiry_date = models.DateTimeField(null=True, blank=True, verbose_name='Expiry date')
     
     created_by = models.ForeignKey(
         User, 
         on_delete=models.PROTECT, 
-        verbose_name='ایجاد کننده'
+        verbose_name='Created by'
     )
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
-        verbose_name = 'اطلاعیه'
-        verbose_name_plural = 'اطلاعیه‌ها'
+        verbose_name = 'Announcement'
+        verbose_name_plural = 'Announcements'
         ordering = ['-publish_date', '-priority']
     
     def __str__(self):
@@ -230,65 +258,68 @@ class Announcement(models.Model):
 
 class SupportTicket(models.Model):
     TICKET_TYPES = (
-        ('technical', 'فنی'),
-        ('financial', 'مالی'),
-        ('complaint', 'شکایت'),
-        ('suggestion', 'پیشنهاد'),
-        ('general', 'عمومی'),
+        ('technical', 'Technical'),
+        ('financial', 'Financial'),
+        ('complaint', 'Complaint'),
+        ('suggestion', 'Suggestion'),
+        ('general', 'General'),
     )
     
     STATUS_CHOICES = (
-        ('open', 'باز'),
-        ('in_progress', 'در دست بررسی'),
-        ('resolved', 'حل شده'),
-        ('closed', 'بسته شده'),
+        ('open', 'Open'),
+        ('in_progress', 'In progress'),
+        ('resolved', 'Resolved'),
+        ('closed', 'Closed'),
     )
     
     PRIORITY_CHOICES = (
-        ('low', 'کم'),
-        ('medium', 'متوسط'),
-        ('high', 'بالا'),
-        ('urgent', 'فوری'),
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+        ('urgent', 'Urgent'),
     )
     
-    title = models.CharField(max_length=200, verbose_name='عنوان تیکت')
-    description = models.TextField(verbose_name='شرح مشکل')
-    ticket_type = models.CharField(max_length=20, choices=TICKET_TYPES, verbose_name='نوع تیکت')
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='open', verbose_name='وضعیت')
-    priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='medium', verbose_name='اولویت')
+    title = models.CharField(max_length=200, verbose_name='Ticket title')
+    description = models.TextField(verbose_name='Description')
+    ticket_type = models.CharField(max_length=20, choices=TICKET_TYPES, verbose_name='Ticket type')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='open', verbose_name='Status')
+    priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='medium', verbose_name='Priority')
     
-    # کاربر و واحد
+    # User and unit
     submitted_by = models.ForeignKey(
         User, 
         on_delete=models.CASCADE, 
         related_name='support_tickets',
-        verbose_name='ثبت کننده'
+        verbose_name='Submitted by'
     )
     unit = models.ForeignKey(
         Unit, 
         on_delete=models.CASCADE, 
-        verbose_name='واحد'
+        verbose_name='Unit'
     )
     
-    # مسئول پیگیری
+    # Assigned handler
     assigned_to = models.ForeignKey(
         User, 
         on_delete=models.SET_NULL, 
         null=True, 
         blank=True,
         limit_choices_to={'user_type__in': ['manager', 'staff']},
-        verbose_name='واگذار شده به'
+        verbose_name='Assigned to'
     )
+
+    # optionally associate ticket with an internal team/department
+    team = models.ForeignKey('Team', null=True, blank=True, on_delete=models.SET_NULL, verbose_name='Team/Department')
     
-    # زمان‌ها
-    submitted_at = models.DateTimeField(auto_now_add=True, verbose_name='زمان ثبت')
-    assigned_at = models.DateTimeField(null=True, blank=True, verbose_name='زمان تخصیص')
-    resolved_at = models.DateTimeField(null=True, blank=True, verbose_name='زمان حل')
-    closed_at = models.DateTimeField(null=True, blank=True, verbose_name='زمان بسته شدن')
+    # Times
+    submitted_at = models.DateTimeField(auto_now_add=True, verbose_name='Submitted at')
+    assigned_at = models.DateTimeField(null=True, blank=True, verbose_name='Assigned at')
+    resolved_at = models.DateTimeField(null=True, blank=True, verbose_name='Resolved at')
+    closed_at = models.DateTimeField(null=True, blank=True, verbose_name='Closed at')
     
     class Meta:
-        verbose_name = 'تیکت پشتیبانی'
-        verbose_name_plural = 'تیکت‌های پشتیبانی'
+        verbose_name = 'Support ticket'
+        verbose_name_plural = 'Support tickets'
         ordering = ['-submitted_at']
     
     def __str__(self):
@@ -299,28 +330,28 @@ class TicketResponse(models.Model):
         SupportTicket, 
         on_delete=models.CASCADE, 
         related_name='responses',
-        verbose_name='تیکت'
+        verbose_name='Ticket'
     )
     responded_by = models.ForeignKey(
         User, 
         on_delete=models.CASCADE, 
-        verbose_name='پاسخ دهنده'
+        verbose_name='Responder'
     )
-    message = models.TextField(verbose_name='پیام')
+    message = models.TextField(verbose_name='Message')
     attachment = models.FileField(
         upload_to='ticket_attachments/', 
         null=True, 
         blank=True,
-        verbose_name='فایل ضمیمه'
+        verbose_name='Attachment'
     )
-    is_internal = models.BooleanField(default=False, verbose_name='پاسخ داخلی')
+    is_internal = models.BooleanField(default=False, verbose_name='Internal response')
     
     created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
-        verbose_name = 'پاسخ تیکت'
-        verbose_name_plural = 'پاسخ‌های تیکت'
+        verbose_name = 'Ticket response'
+        verbose_name_plural = 'Ticket responses'
         ordering = ['created_at']
     
     def __str__(self):
-        return f"پاسخ به {self.ticket.title}"
+        return f"Response to {self.ticket.title}"

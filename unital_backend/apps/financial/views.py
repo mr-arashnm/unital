@@ -35,7 +35,8 @@ class ChargeViewSet(viewsets.ModelViewSet):
         elif user.user_type == 'owner':
             return Charge.objects.filter(unit__owner=user)
         elif user.user_type == 'resident':
-            return Charge.objects.filter(unit__current_resident=user)
+            # Unit uses field 'resident' for current resident
+            return Charge.objects.filter(unit__resident=user)
         return Charge.objects.none()
     
     @action(detail=False, methods=['post'])
@@ -85,8 +86,10 @@ class TransactionViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if user.user_type in ['manager', 'board_member']:
             return Transaction.objects.filter(charge__unit__building__complex__board_members=user)
-        elif user.user_type in ['owner', 'resident']:
+        elif user.user_type == 'owner':
             return Transaction.objects.filter(charge__unit__owner=user)
+        elif user.user_type == 'resident':
+            return Transaction.objects.filter(charge__unit__resident=user)
         return Transaction.objects.none()
     
     @action(detail=True, methods=['post'])

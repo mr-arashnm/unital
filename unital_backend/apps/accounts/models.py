@@ -7,6 +7,10 @@ class User(AbstractUser):
     USER_TYPES = (
         ('manager', 'manager'),
         ('staff', 'staff'),
+        ('owner', 'owner'),
+        ('resident', 'resident'),
+        ('board_member', 'board_member'),
+        ('customer', 'customer'),
     )
     
     user_type = models.CharField(max_length=20, choices=USER_TYPES, default='resident')

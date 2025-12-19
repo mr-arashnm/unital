@@ -2,9 +2,10 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from django.db.models import Count, Avg, Q
+from django.db.models import Count, Avg, Q, F, ExpressionWrapper, DurationField
 from django.utils import timezone
 from datetime import timedelta
+from django.db import transaction
 from .models import Team, Task, ServiceRequest, TaskComment, Performance
 from .serializers import (
     TeamSerializer, TaskSerializer, ServiceRequestSerializer,
@@ -27,18 +28,17 @@ class TeamViewSet(viewsets.ModelViewSet):
         """اضافه کردن عضو به تیم"""
         team = self.get_object()
         member_id = request.data.get('member_id')
-        
+        # only managers/board_members or staff supervisors may add members
+        if request.user.user_type not in ['manager', 'board_member', 'staff']:
+            return Response({'error': 'دسترسی غیرمجاز'}, status=status.HTTP_403_FORBIDDEN)
+
         try:
-            from accounts.models import User
+            from apps.accounts.models import User
             member = User.objects.get(id=member_id, user_type='staff')
             team.members.add(member)
-            
             return Response({'message': 'عضو با موفقیت اضافه شد'})
         except User.DoesNotExist:
-            return Response(
-                {'error': 'کاربر یافت نشد یا نوع کاربری نامعتبر است'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({'error': 'کاربر یافت نشد یا نوع کاربری نامعتبر است'}, status=status.HTTP_400_BAD_REQUEST)
 
 class TaskViewSet(viewsets.ModelViewSet):
     queryset = Task.objects.all()
@@ -60,22 +60,22 @@ class TaskViewSet(viewsets.ModelViewSet):
         """تخصیص وظیفه به کارمند"""
         task = self.get_object()
         staff_id = request.data.get('staff_id')
-        
+        # only managers/board_members or team supervisors can assign
+        if request.user.user_type not in ['manager', 'board_member', 'staff']:
+            return Response({'error': 'دسترسی غیرمجاز'}, status=status.HTTP_403_FORBIDDEN)
+
         try:
-            from accounts.models import User
+            from apps.accounts.models import User
             staff = User.objects.get(id=staff_id, user_type='staff')
-            
+
             task.assigned_to = staff
             task.status = 'assigned'
             task.assigned_at = timezone.now()
             task.save()
-            
+
             return Response({'message': 'وظیفه با موفقیت تخصیص داده شد'})
         except User.DoesNotExist:
-            return Response(
-                {'error': 'کارمند یافت نشد'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({'error': 'کارمند یافت نشد'}, status=status.HTTP_400_BAD_REQUEST)
     
     @action(detail=True, methods=['post'])
     def start(self, request, pk=None):
@@ -135,34 +135,37 @@ class ServiceRequestViewSet(viewsets.ModelViewSet):
         """تخصیص درخواست به تیم"""
         service_request = self.get_object()
         team_id = request.data.get('team_id')
-        
+        # only managers or staff can assign requests to teams
+        if request.user.user_type not in ['manager', 'board_member', 'staff']:
+            return Response({'error': 'دسترسی غیرمجاز'}, status=status.HTTP_403_FORBIDDEN)
+
         try:
             team = Team.objects.get(id=team_id)
-            service_request.assigned_team = team
-            service_request.status = 'assigned'
-            service_request.assigned_at = timezone.now()
-            service_request.save()
-            
-            # ایجاد وظیفه مرتبط
-            task = Task.objects.create(
-                title=f"درخواست: {service_request.title}",
-                description=service_request.description,
-                team=team,
-                priority=service_request.priority,
-                related_unit=service_request.unit,
-                due_date=timezone.now() + timedelta(days=3),  # 3 روز مهلت
-                created_by=request.user
-            )
-            
-            service_request.related_task = task
-            service_request.save()
-            
+
+            # Atomic: create task and update service request together
+            with transaction.atomic():
+                service_request.assigned_team = team
+                service_request.status = 'assigned'
+                service_request.assigned_at = timezone.now()
+                service_request.save()
+
+                # ایجاد وظیفه مرتبط
+                task = Task.objects.create(
+                    title=f"درخواست: {service_request.title}",
+                    description=service_request.description,
+                    team=team,
+                    priority=service_request.priority,
+                    related_unit=service_request.unit,
+                    due_date=timezone.now() + timedelta(days=3),  # 3 روز مهلت
+                    created_by=request.user
+                )
+
+                service_request.related_task = task
+                service_request.save()
+
             return Response({'message': 'درخواست به تیم تخصیص داده شد'})
         except Team.DoesNotExist:
-            return Response(
-                {'error': 'تیم یافت نشد'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({'error': 'تیم یافت نشد'}, status=status.HTTP_400_BAD_REQUEST)
 
 class TaskCommentViewSet(viewsets.ModelViewSet):
     queryset = TaskComment.objects.all()
@@ -212,9 +215,9 @@ class PerformanceViewSet(viewsets.ModelViewSet):
             
             avg_completion_time = completed_tasks_with_time.aggregate(
                 avg_time=Avg(
-                    models.ExpressionWrapper(
-                        models.F('completed_at') - models.F('started_at'),
-                        output_field=models.DurationField()
+                    ExpressionWrapper(
+                        F('completed_at') - F('started_at'),
+                        output_field=DurationField()
                     )
                 )
             )['avg_time']

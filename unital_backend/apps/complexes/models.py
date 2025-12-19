@@ -38,6 +38,13 @@ class Building(models.Model):
     # زمان‌ها
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='create time')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='last update')
+    # features available for this building (e.g. 'support_tickets', 'meetings', 'notifications')
+    features = models.ManyToManyField(
+        'Feature',
+        blank=True,
+        related_name='buildings',
+        verbose_name='features'
+    )
     
     class Meta:
         verbose_name = 'building'
@@ -46,6 +53,27 @@ class Building(models.Model):
     
     def __str__(self):
         return f"{self.name} ({self.code})"
+
+    def has_feature(self, key: str) -> bool:
+        """Return True if this building has a Feature with the given key."""
+        return self.features.filter(key=key).exists()
+
+
+class Feature(models.Model):
+    """A small registry of named features that can be attached to Buildings.
+
+    Examples of keys: 'support_tickets', 'meetings', 'notifications', 'announcements', 'facilities'
+    """
+    key = models.SlugField(max_length=100, unique=True, verbose_name='key')
+    name = models.CharField(max_length=200, verbose_name='display name')
+    description = models.TextField(blank=True, null=True, verbose_name='description')
+
+    class Meta:
+        verbose_name = 'feature'
+        verbose_name_plural = 'features'
+
+    def __str__(self):
+        return f"{self.name} ({self.key})"
 
 class Unit(models.Model):
     UNIT_STATUS = (
@@ -327,66 +355,7 @@ class Parking(models.Model):
         self.status = 'available'
         self.save()
         return True, "Parking released successfully"
-    STATUS_CHOICES = (
-        ('available', 'Available'),
-        ('occupied', 'Occupied'),
-    )
     
-    building = models.ForeignKey(
-        Building,
-        on_delete=models.CASCADE,
-        related_name='parkings',
-        verbose_name='Building'
-    )
-    unit = models.ForeignKey(
-        Unit,
-        on_delete=models.SET_NULL,  # مهم: با حذف واحد، پارکینگ آزاد شود
-        null=True,
-        blank=True,
-        related_name='parkings',
-        verbose_name='Assigned Unit'
-    )
-    floor = models.IntegerField(verbose_name='Floor')
-    code = models.CharField(
-        max_length=20,
-        unique=True,
-        verbose_name='Parking Code'
-    )
-    status = models.CharField(
-        max_length=20,
-        choices=STATUS_CHOICES,
-        default='available',
-        verbose_name='Status'
-    )
-    
-    class Meta:
-        verbose_name = 'parking'
-        verbose_name_plural = 'parkings'
-        ordering = ['building', 'floor', 'code']
-    
-    def __str__(self):
-        return f"Parking {self.code} - {self.building.name}"
-    
-    def assign_to_unit(self, unit):
-        """Assign parking to unit"""
-        if self.status == 'occupied':
-            return False, "Parking is already occupied"
-
-        # verify that the unit is in the same building
-        if unit.building != self.building:
-            return False, "Unit is not in the same building"
-
-        self.unit = unit
-        self.status = 'occupied'
-        self.save()
-        return True, "Parking assigned successfully"
-    
-    def release_from_unit(self):
-        """Release parking from unit"""
-        self.unit = None
-        self.status = 'available'
-        self.save()
-        return True, "Parking released successfully"
     
 class Warehouse(models.Model):
     STATUS_CHOICES = (

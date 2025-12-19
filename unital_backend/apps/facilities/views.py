@@ -20,14 +20,16 @@ class FacilityViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         complex_id = self.request.query_params.get('complex_id')
-        
+        # only include facilities from buildings that have the 'facilities' feature
+        base_q = Facility.objects.filter(complex__features__key='facilities', is_active=True)
+
         if user.user_type in ['manager', 'board_member', 'staff']:
-            queryset = Facility.objects.filter(complex__board_members=user)
+            queryset = base_q.filter(complex__board_members=user)
         else:
-            # ساکنین فقط امکانات مجتمع خود را می‌بینند
+            # residents only see facilities in their complexes (and only if feature enabled)
             user_units = user.owned_units.all() | user.residing_units.all()
             user_complexes = user_units.values_list('building__complex', flat=True)
-            queryset = Facility.objects.filter(complex_id__in=user_complexes, is_active=True)
+            queryset = base_q.filter(complex_id__in=user_complexes)
         
         if complex_id:
             queryset = queryset.filter(complex_id=complex_id)
@@ -123,13 +125,26 @@ class FacilityBookingViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         user = self.request.user
-        
+        # only include bookings for facilities that have 'facilities' enabled
+        base_q = FacilityBooking.objects.filter(facility__complex__features__key='facilities')
+
         if user.user_type in ['manager', 'board_member', 'staff']:
-            return FacilityBooking.objects.filter(facility__complex__board_members=user)
+            return base_q.filter(facility__complex__board_members=user)
         else:
-            return FacilityBooking.objects.filter(user=user)
+            return base_q.filter(user=user)
     
     def perform_create(self, serializer):
+        # ensure the target facility's building enables facilities
+        facility = serializer.validated_data.get('facility')
+        if facility is None:
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError({'facility': 'Facility is required'})
+
+        # facility.complex is the Building FK in this model
+        if not facility.complex.has_feature('facilities'):
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied('This building does not enable facilities')
+
         serializer.save(user=self.request.user)
     
     @action(detail=True, methods=['post'])

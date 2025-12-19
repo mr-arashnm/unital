@@ -2,40 +2,65 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from .permissions import IsTicketParticipantOrStaff
 from django.db.models import Q
 from django.utils import timezone
-from datetime import timedelta
 from .models import (
     Notification, Meeting, MeetingAttendance, MeetingMinute,
     Announcement, SupportTicket, TicketResponse
 )
+from .models import Team
 from .serializers import (
     NotificationSerializer, MeetingSerializer, MeetingAttendanceSerializer,
     MeetingMinuteSerializer, AnnouncementSerializer, SupportTicketSerializer,
-    TicketResponseSerializer
+    TicketResponseSerializer, TeamSerializer
 )
 
 class NotificationViewSet(viewsets.ModelViewSet):
     queryset = Notification.objects.all()
     serializer_class = NotificationSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsTicketParticipantOrStaff]
     
     def get_queryset(self):
         user = self.request.user
         complex_id = self.request.query_params.get('complex_id')
-        
-        # مدیران می‌توانند همه اطلاع‌رسانی‌ها را ببینند
+        # build base complex set for the user (complexes where user has units)
+        user_units = user.owned_units.all() | user.residing_units.all()
+        user_complexes = list(user_units.values_list('building__complex', flat=True))
+
+        # managers/board members can also see notifications for complexes they manage
         if user.user_type in ['manager', 'board_member']:
-            queryset = Notification.objects.filter(complex__board_members=user)
+            base_q = Notification.objects.filter(complex__board_members=user)
         else:
-            # ساکنین فقط اطلاع‌رسانی‌های مربوط به خود را می‌بینند
-            user_units = user.owned_units.all() | user.residing_units.all()
-            user_complexes = user_units.values_list('building__complex', flat=True)
-            queryset = Notification.objects.filter(complex_id__in=user_complexes)
-        
+            base_q = Notification.objects.filter(complex_id__in=user_complexes)
+
+        # filter by complex if provided
         if complex_id:
-            queryset = queryset.filter(complex_id=complex_id)
-            
+            base_q = base_q.filter(complex_id=complex_id)
+
+        # now include notifications targeted to user's role(s), teams, or specific user
+        from django.db.models import Q
+        q = Q()
+        # role-based (JSONField contains)
+        q |= Q(target_roles__contains=[user.user_type])
+        # specific users
+        q |= Q(specific_users=user)
+        # team-based
+        user_teams = Team.objects.filter(members=user)
+        if user_teams.exists():
+            q |= Q(target_teams__in=user_teams)
+
+        # legacy target_type handling
+        if user.user_type == 'owner':
+            # owners see owner-targeted messages
+            q |= Q(target_type='owners')
+        if user.user_type == 'resident':
+            q |= Q(target_type='residents')
+        if user.user_type in ['manager', 'board_member']:
+            q |= Q(target_type='board')
+        q |= Q(target_type='all')
+
+        queryset = base_q.filter(q).distinct()
         return queryset
     
     @action(detail=True, methods=['post'])
@@ -64,21 +89,29 @@ class MeetingViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         complex_id = self.request.query_params.get('complex_id')
-        
+        # base complexes for the user
+        user_units = user.owned_units.all() | user.residing_units.all()
+        user_complexes = list(user_units.values_list('building__complex', flat=True))
+
         if user.user_type in ['manager', 'board_member']:
-            queryset = Meeting.objects.filter(complex__board_members=user)
+            base_q = Meeting.objects.filter(complex__board_members=user)
         else:
-            # ساکنین فقط جلسات عمومی را می‌بینند
-            user_units = user.owned_units.all() | user.residing_units.all()
-            user_complexes = user_units.values_list('building__complex', flat=True)
-            queryset = Meeting.objects.filter(
-                complex_id__in=user_complexes,
-                meeting_type__in=['general', 'emergency']
-            )
-        
+            base_q = Meeting.objects.filter(complex_id__in=user_complexes, meeting_type__in=['general', 'emergency'])
+
         if complex_id:
-            queryset = queryset.filter(complex_id=complex_id)
-            
+            base_q = base_q.filter(complex_id=complex_id)
+
+        # further filter by target_roles or target_teams if set
+        from django.db.models import Q
+        q = Q()
+        q |= Q(target_roles__contains=[user.user_type])
+        q |= Q(attendees=user)
+        user_teams = Team.objects.filter(members=user)
+        if user_teams.exists():
+            q |= Q(target_teams__in=user_teams)
+
+        # always include meetings targeted to 'all' via meeting_type/general fallback already handled
+        queryset = base_q.filter(q).distinct()
         return queryset
     
     @action(detail=True, methods=['post'])
@@ -110,23 +143,35 @@ class AnnouncementViewSet(viewsets.ModelViewSet):
         complex_id = self.request.query_params.get('complex_id')
         
         # فیلتر بر اساس تاریخ انقضا
-        queryset = Announcement.objects.filter(
+        base_q = Announcement.objects.filter(
             is_published=True,
             publish_date__lte=timezone.now()
         ).filter(
             Q(expiry_date__isnull=True) | Q(expiry_date__gte=timezone.now())
         )
-        
-        if user.user_type not in ['manager', 'board_member']:
-            # ساکنین فقط اطلاعیه‌های مربوط به واحدهای خود را می‌بینند
-            user_units = user.owned_units.all() | user.residing_units.all()
-            queryset = queryset.filter(
-                Q(target_units__isnull=True) | Q(target_units__in=user_units)
-            ).distinct()
-        
+
+        # base complexes where user has units
+        user_units = user.owned_units.all() | user.residing_units.all()
+        user_complexes = list(user_units.values_list('building__complex', flat=True))
+
+        if user.user_type in ['manager', 'board_member']:
+            base_q = base_q.filter(complex__board_members=user)
+        else:
+            base_q = base_q.filter(complex_id__in=user_complexes)
+
         if complex_id:
-            queryset = queryset.filter(complex_id=complex_id)
-            
+            base_q = base_q.filter(complex_id=complex_id)
+
+        from django.db.models import Q
+        q = Q()
+        q |= Q(target_roles__contains=[user.user_type])
+        user_teams = Team.objects.filter(members=user)
+        if user_teams.exists():
+            q |= Q(target_teams__in=user_teams)
+        # units targeting
+        q |= Q(target_units__isnull=True) | Q(target_units__in=user_units)
+
+        queryset = base_q.filter(q).distinct()
         return queryset
 
 class SupportTicketViewSet(viewsets.ModelViewSet):
@@ -136,16 +181,42 @@ class SupportTicketViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         user = self.request.user
-        
+        # start with tickets that belong to buildings which have the 'support_tickets' feature
+        base_q = SupportTicket.objects.filter(unit__building__features__key='support_tickets')
+
+        # users in admin roles see complex tickets
         if user.user_type in ['manager', 'board_member', 'staff']:
-            # پرسنل می‌توانند همه تیکت‌ها را ببینند
-            return SupportTicket.objects.filter(unit__building__complex__board_members=user)
-        else:
-            # کاربران فقط تیکت‌های خود را می‌بینند
-            return SupportTicket.objects.filter(submitted_by=user)
+            return base_q.filter(unit__building__complex__board_members=user)
+
+        # team members see tickets assigned to their team
+        user_teams = Team.objects.filter(members=user)
+        if user_teams.exists():
+            return base_q.filter(Q(team__in=user_teams) | Q(submitted_by=user)).distinct()
+
+        # default: user sees their own tickets (but only for buildings that have the feature)
+        return base_q.filter(submitted_by=user)
     
     def perform_create(self, serializer):
-        serializer.save(submitted_by=self.request.user)
+        # allow creating tickets associated with a team (optional)
+        team_id = self.request.data.get('team')
+        if team_id:
+            try:
+                team = Team.objects.get(id=team_id)
+            except Team.DoesNotExist:
+                team = None
+        else:
+            team = None
+        # ensure the unit's building supports support_tickets
+        unit = serializer.validated_data.get('unit')
+        if unit is None:
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError({'unit': 'Unit is required'})
+
+        if not unit.building.has_feature('support_tickets'):
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied('This building does not enable support tickets')
+
+        serializer.save(submitted_by=self.request.user, team=team)
     
     @action(detail=True, methods=['post'])
     def add_response(self, request, pk=None):
@@ -196,6 +267,14 @@ class SupportTicketViewSet(viewsets.ModelViewSet):
 class TicketResponseViewSet(viewsets.ModelViewSet):
     queryset = TicketResponse.objects.all()
     serializer_class = TicketResponseSerializer
+    permission_classes = [IsAuthenticated]
+
+class TeamViewSet(viewsets.ModelViewSet):
+    queryset = Team.objects.all()
+    serializer_class = TeamSerializer
+    # lightweight serializer using only name and members will be used by admin/frontends
+    # We will reuse UserInfoSerializer to show member info via nested serializers if needed
+    # For now expose simple fields via ModelSerializer by DRF default behavior
     permission_classes = [IsAuthenticated]
 
 class MeetingMinuteViewSet(viewsets.ModelViewSet):
