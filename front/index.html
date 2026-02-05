@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Operations Dashboard + ChatBot</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header>
+    <h1>Operations Dashboard</h1>
+    <nav>
+        <a href="pages/tasks.html">Tasks</a>
+        <a href="pages/teams.html">Teams</a>
+        <a href="pages/meetings.html">Meetings</a>
+        <a href="pages/notifications.html">Notifications</a>
+        <a href="pages/login.html">Login</a>
+    </nav>
+</header>
+
+<main>
+    <h2>Welcome to the Operations Dashboard</h2>
+
+    <!-- ✅ Summary -->
+    <div id="summary">
+        <div>Total Tasks: <span id="total-tasks">0</span></div>
+        <div>Completed Tasks: <span id="completed-tasks">0</span></div>
+        <div>Overdue Tasks: <span id="overdue-tasks">0</span></div>
+    </div>
+
+    <!-- ✅ Chat Bot Card -->
+    <div class="card">
+        <h3>Chat with Bot 🤖</h3>
+
+        <div id="chat-box">
+            <div class="msg bot"><b>Bot:</b> سلام! من پشتیبان هوشمند سیستم هستم 😊 مشکل یا درخواستت رو بگو.</div>
+        </div>
+
+        <div class="chat-input-row">
+            <input id="chat-input" type="text" placeholder="پیام خود را بنویسید...">
+            <button id="chat-send">Send</button>
+        </div>
+    </div>
+</main>
+
+<!-- ✅ API -->
+<script src="js/api.js"></script>
+
+<script>
+    // -----------------------------
+    // ✅ Dashboard Data
+    // -----------------------------
+    async function loadDashboard() {
+        const data = await apiFetch("/tasks");
+        if (!data) return;
+
+        document.getElementById("total-tasks").innerText = data.total_tasks ?? 0;
+        document.getElementById("completed-tasks").innerText = data.completed_tasks ?? 0;
+        document.getElementById("overdue-tasks").innerText = data.overdue_tasks ?? 0;
+    }
+    loadDashboard();
+
+
+    // -----------------------------
+    // ✅ Chat Bot UI
+    // -----------------------------
+    const chatBox = document.getElementById("chat-box");
+    const chatInput = document.getElementById("chat-input");
+    const chatSend = document.getElementById("chat-send");
+
+    function appendMessage(role, text) {
+        const div = document.createElement("div");
+        div.className = "msg " + role;
+        div.innerHTML = `<b>${role === "user" ? "You" : "Bot"}:</b> ${text}`;
+        chatBox.appendChild(div);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    async function sendMessage() {
+        const msg = chatInput.value.trim();
+        if (!msg) return;
+
+        // ✅ show user message
+        appendMessage("user", msg);
+        chatInput.value = "";
+
+        // ✅ call backend chatbot API
+        const res = await apiFetch("/chat", {
+            method: "POST",
+            body: JSON.stringify({ text: msg })
+        });
+
+        if (!res) {
+            appendMessage("bot", "❌ خطا در دریافت پاسخ از سرور");
+            return;
+        }
+
+        // ✅ show HUMAN response (not raw intent)
+        appendMessage("bot", res.response_text || "✅ درخواست شما دریافت شد.");
+    }
+
+    // ✅ send button
+    chatSend.addEventListener("click", sendMessage);
+
+    // ✅ Enter key = send
+    chatInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") sendMessage();
+    });
+</script>
+
+</body>
+</html>

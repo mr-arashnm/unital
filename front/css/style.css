@@ -1,0 +1,130 @@
+body {
+    font-family: "Segoe UI", Tahoma, sans-serif;
+    margin: 0;
+    padding: 0;
+    background: #f4f6f8;
+    color: #333;
+}
+
+header {
+    background: #2d3e50;
+    color: white;
+    padding: 15px 30px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 22px;
+}
+
+header nav a {
+    color: white;
+    margin-left: 18px;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+header nav a:hover {
+    color: #ffd700;
+}
+
+main {
+    padding: 30px;
+    max-width: 1000px;
+    margin: auto;
+}
+
+/* Summary cards */
+#summary {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 25px;
+}
+
+#summary div {
+    background: white;
+    padding: 18px;
+    border-radius: 12px;
+    flex: 1 1 200px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+#summary span {
+    display: inline-block;
+    margin-top: 10px;
+    font-size: 22px;
+    font-weight: bold;
+    color: #2d3e50;
+}
+
+/* Card container */
+.card {
+    background: white;
+    padding: 20px;
+    border-radius: 14px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    max-width: 700px;
+    margin: auto;
+}
+
+#chat-box {
+    background: #fafafa;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    height: 280px;
+    padding: 12px;
+    overflow-y: auto;
+    margin: 10px 0 15px;
+}
+
+/* Messages */
+.msg {
+    padding: 8px 12px;
+    margin: 6px 0;
+    border-radius: 10px;
+    max-width: 80%;
+}
+
+.msg.user {
+    background: #d0e6ff;
+    margin-left: auto;
+    text-align: right;
+}
+
+.msg.bot {
+    background: #eee;
+    margin-right: auto;
+}
+
+/* Input row */
+.chat-input-row {
+    display: flex;
+    gap: 10px;
+}
+
+#chat-input {
+    flex: 1;
+    padding: 10px 12px;
+    font-size: 15px;
+    border-radius: 10px;
+    border: 1px solid #ccc;
+}
+
+#chat-send {
+    padding: 10px 18px;
+    border: none;
+    border-radius: 10px;
+    background: #2d3e50;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+#chat-send:hover {
+    background: #1f2a36;
+}
