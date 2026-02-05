@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ChatBot</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<header>
+    <h1>Operations Dashboard</h1>
+    <nav>
+        <a href="../index.html">Dashboard</a>
+        <a href="tasks.html">Tasks</a>
+        <a href="teams.html">Teams</a>
+        <a href="meetings.html">Meetings</a>
+        <a href="notifications.html">Notifications</a>
+        <a href="login.html">Login</a>
+    </nav>
+</header>
+
+<main>
+    <div class="card">
+        <h2>Chat with Bot 🤖</h2>
+
+        <div id="chat-box">
+            <div class="msg bot">
+                سلام! من پشتیبان هوشمند سیستم هستم 😊<br>
+                درخواستت رو بنویس.
+            </div>
+        </div>
+
+        <form id="chat-form" class="chat-input-row">
+            <input
+                type="text"
+                id="chat-input"
+                placeholder="Type your message..."
+                autocomplete="off"
+            />
+            <button id="chat-send" type="submit">Send</button>
+        </form>
+    </div>
+</main>
+
+<script src="../js/api.js"></script>
+<script src="../js/chat.js"></script>
+
+</body>
+</html>
